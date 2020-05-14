@@ -1,0 +1,1276 @@
+##################################################################
+##                         Sanity check                         ##
+##################################################################
+  library(dplyr)
+  library(readxl)
+  library(ggplot2)
+  library(lubridate)
+  library(writexl)
+  library(stringr)
+
+
+
+data_full_cleaned <- read_excel("new_analyses/data_full_cleaned_bon.xlsx")
+#View(data_full_cleaned)
+
+
+
+# Urgence analyses Margitta
+
+# View(data_full_cleaned%>%
+#   filter(type.epi.final == "generalisee idiopathique", dx.final == "indetermine")
+# )
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(dx.final = ifelse(code.pat == "BU_CE_21", "crise epilepsie", dx.final),
+         dx.final = ifelse(code.pat == "RE_AK_17", "crise epilepsie", dx.final))
+
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(dx.final = ifelse(code.pat == "BU_CE_21", "crise epilepsie", dx.final),
+         dx.final = ifelse(code.pat == "RE_AK_17", "crise epilepsie", dx.final))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(pointes.1st.EEG = ifelse(res.1st.EEG == "aucun mais propose", NA, pointes.1st.EEG),
+         slow.1st.EEG = ifelse(res.1st.EEG == "aucun mais propose", NA, slow.1st.EEG),
+         slow.1st.EEG = ifelse(res.1st.EEG == "normal", "aucune", slow.1st.EEG))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(pointes.lt.EEG = ifelse(res.lt.EEG == "aucun" | res.lt.EEG == "aucun mais propose", NA, pointes.lt.EEG),
+         slow.lt.EEG = ifelse(res.lt.EEG == "aucun" | res.lt.EEG == "aucun mais propose", NA, slow.lt.EEG))
+
+##---------
+##  Dates  
+##---------
+
+# Date of the first seizure
+
+# ggplot(data_full_cleaned, aes(x = date.naissance)) + geom_histogram() # Some values are above 2000
+
+# View(data_full_cleaned%>%
+#   filter(date.naissance > as.POSIXct("1999-01-01"))
+# )
+
+data_full_cleaned$date.naissance[data_full_cleaned$code.pat == "AD_LO_66"] <- as_date("1947-03-23")
+data_full_cleaned$date.naissance[data_full_cleaned$code.pat == "RE_AK_17"] <- as_date("1994-11-11")
+data_full_cleaned$date.naissance[data_full_cleaned$code.pat == "AL_BE_53"] <- as_date("1959-06-15")
+
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(age = date.1st.1st.sz - date.naissance)%>%
+  mutate(age = round(age/360))%>%
+  mutate(age = ifelse(is.na(age), str_extract(code.pat, "\\d\\d"), age))
+
+data_full_cleaned$date.naissance <- NULL 
+
+
+# Date of birth bigger than the date of the first seizure
+
+# data_full_cleaned %>%
+#   filter(date.naissance > date.1st.1st.sz) # After correection for the dates of birth, no patient left
+
+# date.1st.1st.sz < date.2nd.first.sz
+
+# data_full_cleaned%>% filter(date.1st.1st.sz > date.2nd.1st.sz)
+#View(data_full_cleaned%>% filter(date.2nd.1st.sz > date.dern.1st.sz)) # Check date dern.sz for JA_MA_70 and NA_MA_50
+
+data_full_cleaned$date.dern.1st.sz[data_full_cleaned$code.pat == "JA_MA_70"] <- as_date("2015-02-15")
+data_full_cleaned$date.2nd.1st.sz[data_full_cleaned$code.pat == "NA_MA_50"] <- as_date("2015-12-05")
+
+
+# date.cs.su < date.1st.sz
+
+# View(data_full_cleaned%>%filter(date.1st.cs.su < date.1st.1st.sz))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(date.1st.cs.su = ifelse(code.pat == "PA_EV_77", as.POSIXct("2016-03-25"), as_date(date.1st.cs.su)))%>%
+  mutate(date.1st.cs.su = ifelse(code.pat == "MA_MI_45", as.POSIXct("2015-11-28"), as_date(date.1st.cs.su)))
+data_full_cleaned$date.1st.cs.su <- as_date(data_full_cleaned$date.1st.cs.su)
+
+# date.1st.sz > date.1st.EEG
+  
+# View(data_full_cleaned%>%
+#   filter(date.1st.1st.sz > date.1st.EEG)%>%
+#   select(code.pat, date.1st.EEG, res.1st.EEG, pointes.1st.EEG, slow.1st.EEG, date.1st.1st.sz, date.2nd.1st.sz, date.dern.1st.sz)# REOPEN patients medical records and check
+# )
+
+
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "ME_GI_52"] <- as_date("2016-10-07")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "OT_LO_64"] <- as_date("2012-11-30")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "KE_Ge_81"] <- as_date("2013-04-12")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "PI_DY_23"] <- as_date("2014-08-18")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "MI_MA_64"] <- as_date("2015-07-28")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "TE_TH_55"] <- as_date("2017-05-18")
+data_full_cleaned$slow.1st.EEG[data_full_cleaned$code.pat == "TE_TH_55"] <- "diffuse"
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "SA_Je_32"] <- as_date("2017-02-23")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "DE_RO_66"] <- as_date("2011-06-24")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "ET_ST_66"] <- as_date("2012-07-31")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "GA_JO_60"] <- as_date("2016-01-11")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "HE_AN_91"] <- as_date("2015-12-13")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "HO_GU_71"] <- as_date("2012-11-06")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "HO_GU_71"] <- as_date("2012-11-06")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "JO_CL_72"] <- as_date("2011-03-11")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "MA_AN_57"] <- as_date("2012-02-20")
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "MO_IS_45"] <- as_date("2015-02-16")
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "MO_IS_45"] <- "normal"
+data_full_cleaned$slow.1st.EEG[data_full_cleaned$code.pat == "MO_IS_45"] <- "aucune"
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "PE_MA_80"] <- as_date("2011-03-24")
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "PE_MA_80"] <- "anormal"
+data_full_cleaned$slow.1st.EEG[data_full_cleaned$code.pat == "PE_MA_80"] <- "diffuse"
+data_full_cleaned$date.1st.EEG[data_full_cleaned$code.pat == "VA_GE_71"] <- as_date("2016-04-29")
+
+# date.1st.sz > date.lt.EEG
+
+# View(data_full_cleaned%>%
+#   filter(date.1st.1st.sz > date.lt.EEG)%>%
+#     select(code.pat, date.lt.EEG, res.lt.EEG, pointes.lt.EEG, slow.lt.EEG, date.1st.1st.sz, date.2nd.1st.sz, date.dern.1st.sz)# REOPEN patients medical records and check
+# )
+
+data_full_cleaned$date.lt.EEG[data_full_cleaned$code.pat == "SA_Je_32"] <- as_date("2017-02-28")
+
+# Date.1st.sz > 1st.cs.epi
+
+# View(data_full_cleaned%>%
+#        filter(date.1st.1st.sz > date.1st.cs.epi)) # 27.01.2016
+
+data_full_cleaned$date.1st.cs.epi[data_full_cleaned$code.pat == "LA_PI_70"] <- as_date("2016-01-27")
+
+#dx final == indetermine & !is.na(date.dx.final)
+
+# View(data_full_cleaned%>%
+#   filter(dx.final == "indetermine", !is.na(date.dx.final))%>%
+#     mutate(date.dx.final = as.POSIXct(date.dx.final, origin = "1970-01-01", tz = "UTC"))) # Need to
+# delete all the date.dx.final
+
+data_full_cleaned$date.dx.final[data_full_cleaned$code.pat == "PE_CA_65"] <- NA
+data_full_cleaned$date.dx.final[data_full_cleaned$code.pat == "PO_AN_73"] <- NA
+data_full_cleaned$date.dx.final[data_full_cleaned$code.pat == "SI_MI_79"] <- NA
+data_full_cleaned$date.dx.final[data_full_cleaned$code.pat == "ZE_SY_85"] <- NA
+
+data_full_cleaned$date.dx.final <- as_date(data_full_cleaned$date.dx.final)
+
+# Date 1st consultation epi < date last consultation epi
+
+# View(data_full_cleaned%>%filter(date.1st.cs.epi > date.dern.cs.epi))
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "DE_MI_78"] <- as_date("2015-08-26")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "BO_JO_75"] <- as_date("2016-06-06")
+
+# Date première crise < date hospit SI
+
+# data_full_cleaned%>%
+#   filter(date.1st.1st.sz > date.adm.si)%>%
+#   select(code.pat, date.1st.1st.sz, date.adm.si)# 4 patients, check if correct 
+
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "JE_GE_52"] <- as_date("2012-07-26")
+data_full_cleaned$date.adm.si[data_full_cleaned$code.pat == "MA_AN_57"] <- as_date("2012-02-20")
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "ME_AH_51"] <- as_date("2014-05-09")
+data_full_cleaned$date.adm.si[data_full_cleaned$code.pat == "RO_WI_90"] <- as_date("2011-10-05")
+
+# Date première crise < date prem CS neuro
+
+# data_full_cleaned%>%filter(date.1st.1st.sz > date.1st.cs.neuro)%>%
+#   select(code.pat, date.1st.1st.sz, date.1st.cs.neuro)# 3 patients, check if correct
+
+data_full_cleaned$date.1st.cs.neuro[data_full_cleaned$code.pat == "PR_AD_51"] <- as_date("2016-12-21")
+data_full_cleaned$date.1st.cs.neuro[data_full_cleaned$code.pat == "NE_AN_58"] <- as_date("2015-10-27")
+data_full_cleaned$date.1st.cs.neuro[data_full_cleaned$code.pat == "GA_MA_56"] <- as_date("2012-11-05")
+
+
+# Date première crise < date prem CS psy
+
+# data_full_cleaned%>%filter(date.1st.1st.sz > date.1st.cs.psy)%>%
+#   select(code.pat, date.1st.1st.sz, date.1st.cs.psy)# 3 patients, check if correct
+
+data_full_cleaned$date.1st.cs.psy[data_full_cleaned$code.pat == "MA_AL_40"] <- as_date("2013-07-12")
+data_full_cleaned$date.1st.cs.psy[data_full_cleaned$code.pat == "NW_NE_19"] <- as_date("2013-12-12")
+data_full_cleaned$date.1st.cs.psy[data_full_cleaned$code.pat == "RO_BR_18"] <- NA
+data_full_cleaned$date.dern.cs.psy[data_full_cleaned$code.pat == "RO_BR_18"] <- NA
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "RO_BR_18"] <- NA
+data_full_cleaned$raison_stop_suivi.psy[data_full_cleaned$code.pat == "RO_BR_18"] <- NA
+
+# Date première crise < date prem CS neurochir
+#View(data_full_cleaned%>%filter(date.1st.1st.sz > date.1st.cs.neurochir))# 1 patient, check if correct
+
+data_full_cleaned$date.1st.cs.neurochir[data_full_cleaned$code.pat == "FA_RE_37"] <- NA
+data_full_cleaned$date.dern.cs.neurochir[data_full_cleaned$code.pat == "FA_RE_37"] <- NA
+
+# Date première crise < date prem CS autre
+
+#View(data_full_cleaned%>%filter(date.1st.1st.sz > date.1st.cs.autre))# 8 patients, check if correct
+data_full_cleaned%>%filter(date.1st.1st.sz > date.1st.cs.autre)%>%select(code.pat, date.1st.1st.sz, date.1st.cs.autre, date.dern.cs.autre, type_suivi.autre, SBB.1, SBB.2, SBB.3, SBB.4, SBB.5)
+data_full_cleaned%>%filter(date.1st.1st.sz > date.1st.cs.autre)%>%select(code.pat,SBB.1, SBB.2, SBB.3, SBB.4, SBB.5)
+
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "BI_CH_18"] <- NA
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "BI_CH_18"] <- NA
+data_full_cleaned$type_suivi.autre[data_full_cleaned$code.pat == "BI_CH_18"] <- NA
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "SA_GI_68"] <- as_date("2015-01-14")
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "SA_GI_68"] <- as_date("2015-02-13")
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "MA_SU_54"] <- as_date("2015-04-15")
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "LO_AN_85"] <- NA
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "LO_AN_85"] <- NA
+data_full_cleaned$type_suivi.autre[data_full_cleaned$code.pat == "LO_AN_85"] <- NA
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "DE_JU_50"] <- NA
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "DE_JU_50"] <- NA
+data_full_cleaned$type_suivi.autre[data_full_cleaned$code.pat == "DE_JU_50"] <- NA
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "DE_JU_50"] <- NA
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "FI_YV_85"] <- NA
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "FI_YV_85"] <- NA
+data_full_cleaned$type_suivi.autre[data_full_cleaned$code.pat == "FI_YV_85"] <- NA
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "GA_JO_60"] <- as_date("2016-03-02")
+data_full_cleaned$date.1st.cs.autre[data_full_cleaned$code.pat == "TA_DE_74"] <- as_date("2014-12-01")
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "TA_DE_74"] <- as_date("2014-12-01")
+
+# Date première crise < date décès
+
+# data_full_cleaned%>%filter(date.1st.1st.sz > date.deces)
+
+# date entrée deuxième hospitalisation < date sortie première hospitalisation
+
+#data_full_cleaned%>%filter(date.entree.2nd.hospit < date.sortie.1st.hospit)%>%select(code.pat,date.entree.1st.hospit, date.sortie.1st.hospit, date.entree.2nd.hospit, date.sortie.2nd.hospit, srv.2nd.hospit) # Check 7 patients
+#data_full_cleaned%>%filter(date.entree.2nd.hospit < date.sortie.1st.hospit)%>%select(code.pat, date.1st.1st.sz) # Check 7 patients
+
+data_full_cleaned$date.entree.2nd.hospit[data_full_cleaned$code.pat == "PE_MA_49"] <- NA
+data_full_cleaned$date.sortie.2nd.hospit[data_full_cleaned$code.pat == "PE_MA_49"] <- NA
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "PE_MA_49"] <- NA
+data_full_cleaned$date.entree.1st.hospit[data_full_cleaned$code.pat == "BE_MA_62"] <- as_date("2012-11-26")
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "BE_MA_62"] <- as_date("2012-11-30")
+data_full_cleaned$date.entree.2nd.hospit[data_full_cleaned$code.pat == "BE_MA_62"] <- as_date("2013-01-24")
+data_full_cleaned$date.sortie.2nd.hospit[data_full_cleaned$code.pat == "BE_MA_62"] <- as_date("2013-07-17")
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "BE_MA_62"] <- "neuroreeducation"
+data_full_cleaned$date.entree.2nd.hospit[data_full_cleaned$code.pat == "NN_BA_20"] <- NA
+data_full_cleaned$date.sortie.2nd.hospit[data_full_cleaned$code.pat == "NN_BA_20"] <- NA
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "NN_BA_20"] <- NA
+data_full_cleaned$date.entree.2nd.hospit[data_full_cleaned$code.pat == "MB_KO_57"] <- as_date("2015-04-29")
+data_full_cleaned$date.entree.2nd.hospit[data_full_cleaned$code.pat == "VA_GE_71"] <- NA
+data_full_cleaned$date.sortie.2nd.hospit[data_full_cleaned$code.pat == "VA_GE_71"] <- NA
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "VA_GE_71"] <- NA
+
+# Date prem cs neuro < date dern cs.neuro
+
+# View(data_full_cleaned%>%filter(date.1st.cs.neuro > date.dern.cs.neuro)) # date dern cs.neuro 21.03.2017
+
+data_full_cleaned$date.dern.cs.neuro[data_full_cleaned$code.pat == "TH_CA_54"] <- as_datetime("2017-03-21")
+
+# date prem cs. neurochir < date dern cs.neurochir
+
+# View(data_full_cleaned%>%filter(date.1st.cs.neurochir > date.dern.cs.neurochir)) # date 1st.cs.neurochir 01.10.2011
+
+data_full_cleaned$date.1st.cs.neurochir[data_full_cleaned$code.pat == "KU_PH_57"] <- as_datetime("2011-10-01")
+
+# date prem. cs.psy < date dern cs.psy
+
+# data_full_cleaned%>%filter(date.1st.cs.psy > date.dern.cs.psy)%>%
+#   select(code.pat, date.1st.1st.sz, date.1st.cs.psy, date.dern.cs.psy)# 4 patients to check
+# 
+# data_full_cleaned%>%filter(date.1st.cs.psy > date.dern.cs.psy)%>%
+#   select(code.pat, SBB.1, SBB.2, SBB.3, SBB.4, SBB.5)
+
+data_full_cleaned$date.1st.cs.psy[data_full_cleaned$code.pat == "MA_AL_40"] <- as_date("2012-12-06")
+data_full_cleaned$date.dern.cs.psy[data_full_cleaned$code.pat == "MA_AL_40"] <- as_date("2012-12-06")
+data_full_cleaned$date.dern.cs.psy[data_full_cleaned$code.pat == "NA_MA_50"] <- as_date("2017-02-07")
+data_full_cleaned$date.dern.cs.psy[data_full_cleaned$code.pat == "DI_SO_47"] <- as_date("2014-11-09")
+data_full_cleaned$date.dern.cs.psy[data_full_cleaned$code.pat == "NW_NE_19"] <- as_date("2015-04-08")
+
+# date prem cs.autre < date dern cs.autre
+
+# data_full_cleaned%>%filter(date.1st.cs.autre > date.dern.cs.autre) # 0 patients
+
+# !is.na(date entree 2ème hospit) & is.na(srv 2ème hospitalisation)
+
+# data_full_cleaned%>%filter(!is.na(date.entree.2nd.hospit), is.na(srv.2nd.hospit))%>%
+#   select(code.pat, date.entree.2nd.hospit, date.sortie.2nd.hospit)# 7 patients to check 
+
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "FO_HE_51"] <- "neurologie"
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "TH_AU_84"] <- "MIG"
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "BO_SI_83"] <- "soins palliatifs"
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "MA_DO_72"] <- "neurologie"
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "NE_TE_57"] <- "neuroreeducation"
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "BE_YV_59"] <- "neuroreeducation"
+data_full_cleaned$srv.2nd.hospit[data_full_cleaned$code.pat == "OU_AB_27"] <- "neurochirurgie"
+
+
+# !is.na(cause.deces) & is.na(date.deces)
+
+#data_full_cleaned%>%filter(!is.na(date.deces), is.na(cause.deces)) # 0 patients 
+
+# One patient has wrong LT EEG results
+
+data_full_cleaned$res.lt.EEG[data_full_cleaned$code.pat == "GJ_ST_54"] <- "anormal"
+data_full_cleaned$pointes.lt.EEG[data_full_cleaned$code.pat == "GJ_ST_54"] <- "diffuse"
+
+
+# Wrong CT results 
+data_full_cleaned$res.CT[data_full_cleaned$code.pat == "MA_TH_58" | data_full_cleaned$code.pat == "VA_GE_71"] <- "anormal"
+data_full_cleaned$date.CT[data_full_cleaned$code.pat == "HA_BR_65" | data_full_cleaned$code.pat == "GA_SA_55"] <- NA
+
+
+##-------------
+##  Diagnostic  
+##-------------
+
+# Change the type of cardiovascular for one patient
+data_full_cleaned$type.cardiovasculaire[data_full_cleaned$code.pat == "DA_FI_24"] <- "syncope"
+
+data_full_cleaned%>%
+  filter(type.cardiovasculaire == "cardiaque")%>%
+  select(code.pat, dx.final, type.cardiovasculaire)
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "FR_JA_79"] <- "origine cardiaque"
+data_full_cleaned$type.cardiovasculaire[data_full_cleaned$code.pat == "FR_JA_79"] <- NA
+
+
+# Modifcation of the diagnosis for patients with normal exams
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "MA_JE_26"] <- "autres"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "MA_JE_26"] <- "burn-out"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "MA_JE_26"] <- NA
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "ST_Le_18"] <- "autres"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "ST_Le_18"] <- "migraine"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "ST_Le_18"] <- NA
+
+data_full_cleaned$pointes.lt.EEG[data_full_cleaned$code.pat == "HO_GA_17"] <- "diffuse"
+
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "NE_AR_38"] <- "autres"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "NE_AR_38"] <- "burn-out"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "NE_AR_38"] <- NA
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "DI_OU_34"] <- "origine cardiaque"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "DI_OU_34"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "DI_OU_34"] <- NA
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "BO_CH_73"] <- "crise provoquee"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "BO_CH_73"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "BO_CH_73"] <- NA
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "FA_AN_79"] <- "psychogene"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "FA_AN_79"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "FA_AN_79"] <- NA
+
+data_full_cleaned$res.lt.EEG[data_full_cleaned$code.pat == "AB_AK_39"] <- "anormal"
+data_full_cleaned$pointes.lt.EEG[data_full_cleaned$code.pat == "AB_AK_39"] <- "diffuse"
+
+# dx final == crise epilepsie & is.na(type.epi)
+
+# data_full_cleaned%>%filter(dx.final == "crise epilepsie", is.na(type.epi.final)) # no patient 
+
+# dx final == autre & is.na(type autre dx final)
+
+# data_full_cleaned%>%filter(dx.final == "autres", is.na(type.autre.final))%>%
+#   select(code.pat, date.1st.1st.sz)# Need to correct for 4 patients
+
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "TA_PA_61"] <- "multifactoriel"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "AL_MA_54"] <- "ECA"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "DE_MO_39"] <- "indet non epi"
+data_full_cleaned$type.autre.final[data_full_cleaned$code.pat == "MA_JO_32"] <- "indet non epi"
+  
+#View(data_full_cleaned%>%group_by(type.autre.final)%>%summarise())
+
+
+  # dx initial == autre & is.na(type autre intial)
+
+# data_full_cleaned%>%filter(dx.initial == "autres", is.na(type.autre.initial)) # Need to correct for 2 patients
+
+data_full_cleaned$type.autre.initial[data_full_cleaned$code.pat == "AL_MA_54"] <- "ECA"
+data_full_cleaned$type.autre.initial[data_full_cleaned$code.pat == "LI_GE_32"] <- "tr. Sensitifs peripheriques"
+
+# dx final == origine cardiovasculaire & is.na (type événement cardiovasculaire)
+# data_full_cleaned%>%filter(dx.final == "origine cardiovasculaire", is.na(type.cardiovasculaire))%>%
+#   select(code.pat, date.1st.1st.sz)# 3 patients to review!
+
+data_full_cleaned$type.cardiovasculaire[data_full_cleaned$code.pat == "ME_Be_92"] <- "syncope"
+data_full_cleaned$type.cardiovasculaire[data_full_cleaned$code.pat == "VI_JE_68"] <- "AIT"
+data_full_cleaned$type.cardiovasculaire[data_full_cleaned$code.pat == "LA_YV_81"] <- "syncope"
+
+# View(data_full_cleaned%>% filter(dx.initial == "origine cardiovasculaire", is.na(type.cardiovasculaire))) # only need the first list
+
+# dx initial == crise epilepsie & is.na(type.epi initial)
+
+# data_full_cleaned%>%filter(dx.initial == "crise epilepsie", is.na(type.epi.initial)) # 0 patients
+
+# dx final == crise epilepsie & is.na(type.epi final)
+
+# data_full_cleaned%>%filter(dx.final == "crise epilepsie", is.na(type.epi.final)) # 0 patients
+
+# Delete the patient ZI_MA_67
+
+data_full_cleaned <- data_full_cleaned%>%filter(code.pat != "ZI_MA_67")
+
+# Check NA for dx.final and type.epi.final
+
+#View(data_full_cleaned_bon%>%filter(is.na(dx.final))) # 1 patient to check
+data_full_cleaned%>%filter(dx.final == "crise epilepsie", is.na(type.epi.final)) # 1 other patient to check --> type.epi.initial becomes type.epi.final
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "VA_DI_19"] <- data_full_cleaned$type.epi.initial[data_full_cleaned$code.pat == "VA_DI_19"]
+data_full_cleaned$type.epi.initial[data_full_cleaned$code.pat == "VA_DI_19"] <- NA
+
+# Some EGI have indetermine as dx.final 
+
+#data_full_cleaned%>%filter(type.epi.final == "generalisee idiopathique", dx.final == "indetermine")
+
+
+data_full_cleaned<- data_full_cleaned%>%
+  mutate(dx.final = ifelse(code.pat == "BU_CE_21", "crise epilepsie", dx.final),
+         dx.final = ifelse(code.pat == "RE_AK_17", "crise epilepsie", dx.final))
+
+#data_full_cleaned%>%filter(type.epi.final == "indetermine", dx.final == "indetermine")
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "ST_ED_69"] <- "crise epilepsie"
+
+##-----------
+##  imaging  
+##-----------
+
+# Modification of the EEG results of some patients marked as non-epileptic with spikes
+
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "CH_HA_16"] <- "normal"
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$code.pat == "CH_HA_16"] <- "aucune"
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "LY_SH_22"] <- "normal"
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$code.pat == "LY_SH_22"] <- "aucune"
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "TA_PA_61"] <- "normal"
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$code.pat == "TA_PA_61"] <- "aucune"
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "CH_SU_76"] <- "normal"
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$code.pat == "CH_SU_76"] <- "aucune"
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "MA_MA_90"] <- "normal"
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$code.pat == "MA_MA_90"] <- "aucune"
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "SC_AG_87"] <- "crise epilepsie"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "SC_AG_87"] <- "lesionnelle"
+data_full_cleaned$type.cardiovasculaire[data_full_cleaned$code.pat == "SC_AG_87"] <- NA
+
+# is.na(date.CT) & res.CT != "aucun"
+
+# data_full_cleaned%>%filter(is.na(date.CT), res.CT != "aucun")%>%
+#   select(code.pat, date.CT, res.CT)# Check 3 patients --> nothing to change
+  
+# si resultats CT == aucun | normal --> !is.na(les.CT)
+
+# View(data_full_cleaned%>%filter(res.CT == "aucun"| res.CT == "normal")%>%
+#   filter(les.CT != "aucune"))# Need to remove aucune when there is no CT
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.CT = ifelse(res.CT == "aucun", NA, les.CT))
+
+# si resultats CT == anormal --> is.na(les.CT)
+########################################################################### check at the end
+# View(data_full_cleaned%>%filter(res.CT == "anormal")%>%
+#        filter(les.CT == "aucune" | is.na(les.CT))) # 95 patients to ckeck... not very important now
+
+# si is.na(date.IRM) --> résultats IRM != aucun
+
+data_full_cleaned <- data_full_cleaned%>%mutate(res.IRM = ifelse(res.IRM == "aucun mais  propose", "aucun mais propose", res.IRM))
+
+# data_full_cleaned%>%filter(is.na(date.IRM))%>%
+#        filter(res.IRM != "aucun" , res.IRM != "aucun mais propose")%>%
+#       select(code.pat, res.IRM, date.IRM)# Check 4 patients --> 3 ok
+
+data_full_cleaned$res.IRM[data_full_cleaned$code.pat == "MA_EL_67"] <- NA
+
+# si resultats IRM == aucun | normal --> !is.na(les.IRM)
+
+# View(data_full_cleaned%>%filter(res.IRM == "aucun"|res.IRM == "aucun mais propose")%>%filter(!is.na(les.IRM)))
+    # Delete the aucun in les.irm if aucun mais propose
+
+data_full_cleaned$les.IRM[data_full_cleaned$res.IRM == "aucun mais propose"] <- NA
+
+
+########################################################################### check at the end
+# View(data_full_cleaned%>%filter(res.IRM == "anormal", les.IRM == "aucune")) # 102 patients to review
+
+# résultats EEG std == aucun  & is.na(date EEG std)
+
+# data_full_cleaned%>%filter(res.1st.EEG == "aucun", !is.na(date.1st.EEG)) # 0 patients 
+
+# Check that all patients for eeg
+
+# data_full_cleaned%>%
+#   group_by(res.1st.EEG, pointes.1st.EEG)%>%
+#   summarise(N = n()) # Delete the aucune for aucun mais propose
+
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$res.1st.EEG == "aucun mais  propose"] <- NA
+
+
+# EEG std normal == pointes = foc | gener & ral = foc | gen
+
+# data_full_cleaned%>%filter(pointes.1st.EEG == "focale" | pointes.1st.EEG == "generalisee")%>%
+#   filter(res.1st.EEG == "normal") # 0 patients 
+# 
+# data_full_cleaned%>%filter(slow.1st.EEG == "focale" | slow.1st.EEG == "generalisee")%>%
+#   filter(res.1st.EEG == "normal") # 0 patients
+
+#EEG std anormal == != pointes | != ral
+
+# data_full_cleaned%>%filter(pointes.1st.EEG != "aucune", slow.1st.EEG == "auncune")%>%
+#   filter(res.1st.EEG == "anormal") # 0 patients
+
+#résultats EEG LT == aucun  & is.na(date EEG LT)
+
+# data_full_cleaned%>%filter(res.lt.EEG == "aucun", !is.na(date.lt.EEG)) # 0 patients 
+
+# EEG LT normal == pointes = foc | gener & ral = foc | gen
+
+# data_full_cleaned%>%filter(pointes.lt.EEG == "focale" | pointes.lt.EEG == "generalisee")%>%
+#   filter(res.lt.EEG == "normal") # 0 patients 
+# 
+# data_full_cleaned%>%filter(slow.lt.EEG == "focale" | slow.lt.EEG == "generalisee")%>%
+#   filter(res.lt.EEG == "normal") # 0 patients
+
+#EEG lt anormal == != pointes | != ral
+
+# data_full_cleaned%>%filter(pointes.lt.EEG != "aucune", slow.lt.EEG == "auncune")%>%
+  # filter(res.lt.EEG == "anormal") # 0 patients
+
+#les.epi == 1 & type.epi = focale symptomatique
+
+check.epi.les <- data_full_cleaned%>%filter(les.epi == "lesion non epileptogene"| les.epi == "normal")%>%
+  filter(type.epi.final == "focale symptomatique")%>%
+  select(code.pat, date.1st.1st.sz, res.CT, date.CT, res.IRM, date.IRM, les.epi, dx.final, type.epi.final)# 36 patients to review quickly !!! 
+check.epi.les$dx.corr <- NA
+check.epi.les$type.epi.corr <- NA
+check.epi.les$review <- NA
+
+# library(writexl)
+# write_xlsx(check.epi.les, "check.epi.les.xlsx")
+
+library(readxl)
+check_epi_les_done <- read_excel("check.epi.les_done.xlsx") # Importation of the verified data
+
+transfer <- check_epi_les_done%>%select(code.pat, 
+                                        dx.corr, 
+                                        type.epi.corr, 
+                                        review.dx, 
+                                        res.CT_corr, 
+                                        les.CT, 
+                                        date.IRM.corr, 
+                                        res.IRM.corr,
+                                        les.IRM.corr, 
+                                        les.epi.corr,
+                                        type.autres.final)%>%
+    mutate(les.CT.corr = les.CT,
+           type.autres.final.corr = type.autres.final)%>% # Selection of all the modified columns and renaming of the columns having the same name in the big database
+  select(-les.CT, -type.autres.final)
+
+temp <- data_full_cleaned%>%
+  left_join(transfer, by = "code.pat") # Joining the table by patients code in a test dataframe to check the correctness
+
+# temp%>%filter(!is.na(les.epi.corr))
+# check_epi_les_done%>%filter(!is.na(les.epi.corr)) # Check that for both databases, the number of corrected les.epi is the same. It seems to work !
+
+temp <- temp%>%
+  mutate(dx.final = ifelse(!is.na(dx.corr), dx.corr, dx.final))%>%
+  mutate(type.epi.final = ifelse(!is.na(type.epi.corr), type.epi.corr, type.epi.final))%>%
+  mutate(res.CT = ifelse(!is.na(res.CT_corr), res.CT_corr, res.CT))%>%
+  mutate(les.CT = ifelse(!is.na(les.CT.corr), les.CT.corr, les.CT))%>%
+  mutate(date.IRM = if_else(!is.na(as_date(date.IRM.corr)), as_date(date.IRM.corr), as_date(date.IRM)))%>%
+  mutate(res.IRM = ifelse(!is.na(res.IRM.corr), res.IRM.corr, res.IRM))%>%
+  mutate(les.IRM = ifelse(!is.na(les.IRM.corr), les.IRM.corr, les.IRM))%>%
+  mutate(type.autre.final = ifelse(!is.na(type.autres.final.corr), type.autres.final.corr, type.autre.final))%>%
+  mutate(les.epi = ifelse(!is.na(les.epi.corr), les.epi.corr, les.epi)) # replacement of the corrected values in the database
+
+
+
+data_full_cleaned <- temp  
+
+data_full_cleaned$dx.corr <- NULL
+data_full_cleaned$type.epi.corr <- NULL
+data_full_cleaned$res.CT_corr <- NULL
+data_full_cleaned$les.CT.corr <- NULL
+data_full_cleaned$date.IRM.corr <- NULL
+data_full_cleaned$res.IRM.corr <- NULL
+data_full_cleaned$les.IRM.corr <- NULL
+data_full_cleaned$les.epi.corr <- NULL
+data_full_cleaned$type.autres.final.corr <- NULL # Suppression of all the irrelevant columns 
+
+# les epi !1 & type.epi = généralisées idiopathique
+
+# data_full_cleaned %>% filter(les.epi != "lesion non epileptogene", les.epi != "normal" , les.epi != "aucun")%>%
+#   filter(type.epi.final == "generalisee idiopathique")%>%
+#   select(code.pat, date.1st.1st.sz, les.epi, dx.initial, type.epi.initial, date.CT, res.CT, date.IRM, res.IRM)# 3 patients to check 
+
+data_full_cleaned$review.dx[data_full_cleaned$code.pat == "ME_RO_44"] <- TRUE
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "GA_BE_73"] <- "focale symptomatique"
+
+# Change the lesion type of some patients
+data_full_cleaned$les.IRM[data_full_cleaned$code.pat == "BA_ZH_41"] <- "tumoral"
+data_full_cleaned$les.CT[data_full_cleaned$code.pat == "BA_ZH_41"] <- "tumoral"
+data_full_cleaned$les.CT[data_full_cleaned$code.pat == "DE_JU_50"] <- "demence"
+data_full_cleaned$les.CT[data_full_cleaned$code.pat == "BR_AN_65"] <- "indetermine"
+data_full_cleaned$les.IRM[data_full_cleaned$code.pat == "BR_AN_65"] <- "indetermine"
+
+##-------------------
+##  Axiomatique SBB  
+##-------------------
+
+rm(check.epi.les, temp, transfer, check_epi_les_done)
+
+data_full_cleaned$SBB.5[data_full_cleaned$code.pat == "IB_AH_30"] <- NA
+
+# SBB:
+#   si SBB_2 = 1 | 4 --> SBB_3 != 1:6
+
+# data_full_cleaned%>%filter(SBB.2 == 1 | SBB.2 == 4)%>%filter(SBB.3 > 6 | SBB.3 < 1)%>%
+#   select(code.pat, date.1st.1st.sz, SBB.1, SBB.2, SBB.3, SBB.4, SBB.5)# Trajectory 1 4 7 2 12, check if correct --> correct
+
+# si SBB_2 = 2 --> SBB_3 != 7 | 8 (quelques exceptions à revérifier manuellement)
+
+# data_full_cleaned%>%filter(SBB.2 == 2, SBB.3 <= 6)%>%
+#   select(code.pat, date.1st.1st.sz, srv.1st.hospit.si_autre, SBB.1, SBB.2, SBB.3, SBB.4, SBB.5)# Check 12 patients
+
+data_full_cleaned$date.1st.1st.sz[data_full_cleaned$code.pat == "BA_LA_77"] <- as_date("2011-11-21")
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "BA_LA_77"] <- 4
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "BA_LA_77"] <- 6
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "BA_LA_77"] <- NA
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "CH_DA_42_1"] <- 1
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "MA_FE_52"] <- 1
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "NN_BA_20"] <- 1
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "FR_MI_58"] <- 1
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "HO_GU_71"] <- 7
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "MA_ES_46"] <- 7
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "PR_LU_93"] <- 1
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "VA_GE_71"] <- 1
+
+# si SBB_3 = 3 --> !is.na(SBB_4 & SBB_5)
+
+# View(data_full_cleaned%>%filter(SBB.3 == 3, !is.na(SBB.4))) # 1 patient but ok 
+
+
+# si SBB_4 != 2 --> !is.na(SBB_5)
+
+# View(data_full_cleaned%>%filter(SBB.4 != 2, !is.na(SBB.5))) # 2 0 2 7 13 --> 2 2 7 2 13 --> changer SBB2 en 2; SBB3 7; SBB4 2 ; SBB5 13
+
+data_full_cleaned$SBB.2 [data_full_cleaned$code.pat == "DU_PI_36"] <- 2
+data_full_cleaned$SBB.3 [data_full_cleaned$code.pat == "DU_PI_36"] <- 7
+data_full_cleaned$SBB.4 [data_full_cleaned$code.pat == "DU_PI_36"] <- 2
+data_full_cleaned$SBB.5 [data_full_cleaned$code.pat == "DU_PI_36"] <- 13
+
+
+# si SBB_3 = 6 --> is.na(SRV première hospit si autre)
+
+# data_full_cleaned%>%filter(SBB.3 == 6, is.na(srv.1st.hospit.si_autre))%>%
+#   select(code.pat, date.1st.1st.sz, date.entree.1st.hospit, SBB.1, SBB.2, SBB.3, SBB.4, SBB.5)# 15 patients to check 
+
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "PE_Ge_66"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "TH_RO_90"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "NA_FI_75"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "MO_DY_20"] <- "cardiologie" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "CA_MI_58"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "MO_OM_21"] <- "chir viscerale" 
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "RO_MA_61"] <- 2
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "AL_JU_48"] <- "cardiologie" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "CE_MA_51"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "FO_AB_57"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "LO_AN_85"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "AL_BA_57"] <- "chir orthopedique" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "HE_SA_40"] <- "MIG" 
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "OR_ME_55"] <- "MIG" 
+data_full_cleaned$date.entree.1st.hospit[data_full_cleaned$code.pat == "OR_ME_55"] <- as_date("2013-09-25")
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "WI_SE_67"] <- "MIG"
+
+# si SBB_3 != 6 --> !is.na (SRV première hospit si autre)
+
+# data_full_cleaned%>%filter(SBB.3 != 6, !is.na(srv.1st.hospit.si_autre))%>%
+#   select(code.pat, date.1st.1st.sz, date.entree.1st.hospit, SBB.1, SBB.2, SBB.3, SBB.4, SBB.5, srv.1st.hospit.si_autre)# 13 patients to check 
+
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "NE_TE_57"] <- NA
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "MO_EM_26"] <- 1
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "MO_EM_26"] <- 6
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "RA_LA_43"] <- NA
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "MO_MA_76"] <- NA
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "CA_VI_50"] <- "MIG"
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "CA_VI_50"] <- 1 
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "CA_VI_50"] <- 6
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "BE_NA_64"] <- NA
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "ZA_AL_33"] <- 1
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "ZA_AL_33"] <- 6
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "CH_JA_70"] <- NA
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "MA_PA_57"] <- NA
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "OR_ST_45"] <- NA
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "RE_ER_81"] <- NA
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "RO_AL_79"] <- NA
+  
+  
+# si SBB.3 == 8 et !is.na(SBB.4)
+
+#data_full_cleaned%>%filter(SBB.3 == 8, !is.na(SBB.4))
+
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "LY_MI_66"] <- 7
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "LI_GE_32"] <- 7
+
+
+# !is.na(date.1st.cs.epi), is.na(date.dern.cs.epi)
+
+# data_full_cleaned%>%filter(!is.na(date.1st.cs.epi), is.na(date.dern.cs.epi))%>%
+#   select(code.pat, date.1st.1st.sz, date.1st.cs.epi)# 11 patients to check 
+
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "VE_AN_53"] <- as_date("2017-06-21")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "BO_JE_29"] <- as_date("2013-01-28")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "VO_GE_23"] <- as_date("2013-04-15")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "AL_NO_40"] <- as_date("2013-08-28")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "MA_DA_39"] <- as_date("2013-09-16")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "BE_YV_59"] <- as_date("2015-02-04")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "GR_CH_42"] <- as_date("2015-03-31")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "DA_VI_32"] <- as_date("2015-07-06")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "HA_TE_19"] <- as_date("2016-03-22")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "VA_JA_55"] <- as_date("2016-09-07")
+data_full_cleaned$date.dern.cs.epi[data_full_cleaned$code.pat == "FI_GI_76"] <- as_date("2016-09-20")
+
+# !is.na(date.1st.cs.neuro), is.na(date.dern.cs.neuro))
+
+#data_full_cleaned%>%filter(!is.na(date.1st.cs.neuro), is.na(date.dern.cs.neuro)) # 0 patients 
+
+# (!is.na(date.1st.cs.neurochir), is.na(date.1st.cs.neurochir))
+#data_full_cleaned%>%filter(!is.na(date.1st.cs.neurochir), is.na(date.dern.cs.neurochir)) # 0 patients to check
+
+# (!is.na(date.1st.cs.psy), is.na(date.dern.cs.psy)) 
+#data_full_cleaned%>%filter(!is.na(date.1st.cs.psy), is.na(date.dern.cs.psy)) # 0 patients to check 
+
+# data_full_cleaned%>%filter(!is.na(date.1st.cs.autre), is.na(date.dern.cs.autre))%>%
+#   select(code.pat, date.1st.1st.sz, date.1st.cs.autre, type_suivi.autre)# 1 patient to check 
+
+data_full_cleaned$type_suivi.autre[data_full_cleaned$code.pat == "DU_GE_71"] <- "oncologie"
+data_full_cleaned$date.dern.cs.autre[data_full_cleaned$code.pat == "DU_GE_71"] <- as_date("2015-03-26")
+
+### Additional verifications 
+# Check that all dates are contained between 01.01.2009 and 01.06.2019
+# Creation of a list containing all the variables to check
+
+datecheck <- list(
+  date.1st.EEG = data_full_cleaned$date.1st.EEG,
+  date.CT = data_full_cleaned$date.CT,
+  date.IRM = data_full_cleaned$date.IRM,
+  date.1st.1st.sz = data_full_cleaned$date.1st.1st.sz,
+  date.2nd.cs.su = data_full_cleaned$date.2nd.1st.sz,
+  date.dern.cs.su = data_full_cleaned$date.dern.1st.sz,
+  date.1st.cs.epi = data_full_cleaned$date.1st.cs.epi,
+  date.dern.cs.epi = data_full_cleaned$date.dern.cs.epi,
+  date.adm.si = data_full_cleaned$date.adm.si,
+  date.sortie.si = data_full_cleaned$date.sortie.si,
+  date.1st.cs.neuro = data_full_cleaned$date.1st.cs.neuro,
+  date.dern.cs.neuro = data_full_cleaned$date.dern.cs.neuro,
+  date.1st.cs.neurochir = data_full_cleaned$date.1st.cs.neurochir,
+  date.dern.cs.neurochir = data_full_cleaned$date.dern.cs.neurochir,
+  date.1st.cs.psy = data_full_cleaned$date.1st.cs.psy,
+  date.dern.cs.psy = data_full_cleaned$date.dern.cs.psy,
+  date.1st.cs.autre = data_full_cleaned$date.1st.cs.autre,
+  date.dern.cs.autre = data_full_cleaned$date.dern.cs.autre,
+  date.entree.1st.hospit = data_full_cleaned$date.entree.1st.hospit,
+  date.sortie.1st.hospit = data_full_cleaned$date.sortie.1st.hospit,
+  date.debut.tt = data_full_cleaned$date.debut.tt,
+  date.fin.tt = data_full_cleaned$date.fin.tt,
+  date.dx.final = data_full_cleaned$date.dx.final,
+  date.deces = data_full_cleaned$date.deces,
+  date.entree.2nd.hospit = data_full_cleaned$date.entree.2nd.hospit,
+  date.sortie.2nd.hospit = data_full_cleaned$date.sortie.2nd.hospit
+)
+
+column <- rep(NA,length(datecheck))
+N_to_check <- rep(NA,length(datecheck))
+tocheck <- data_frame(column, N_to_check) # creation of a dataframe including 2 empty columns 
+for(i in 1:length(datecheck)){
+  temp <- sum(!is.na(datecheck[[i]][datecheck[[i]] < as_date("2009-01-01") | datecheck[[i]] > as_date("2019-06-01")]))
+  tocheck$column[i] <- i
+  tocheck$N_to_check[i] <- temp
+} # Now the columns column contains all the variables to check in the dataframe, which is a test to check
+# if the for loops worked properly (counting 1 to 26), and N_to check, indicating the number of dates out
+# of the range
+tocheck <- tocheck%>%filter(N_to_check > 0) # isolation of only the values above 0
+head(tocheck)# renaming the columns by the actual column name
+for(i in 1:nrow(tocheck)){
+  temp <- tocheck$column[i]
+  tocheck$column_name[i] <- names(datecheck[temp])
+} # 7 observations to check manually
+head(tocheck)
+
+# Beginning of the verification
+
+# data_full_cleaned%>%
+#   filter(date.IRM < as_date("2009-01-01")| date.IRM > as_date("2019-06-01"))%>%
+#   select(code.pat, date.IRM) # ok, MRI close to the limit date
+
+data_full_cleaned$date.sortie.si <- as_date(data_full_cleaned$date.sortie.si)
+# data_full_cleaned%>%
+#   filter(date.sortie.si < as_date("2009-01-01"))%>%
+#   select(code.pat, date.adm.si, date.sortie.si) # 1 patient to correct for
+
+data_full_cleaned$date.sortie.si[data_full_cleaned$code.pat == "RO_WI_90"] <- as_date("2011-10-06")
+
+# data_full_cleaned$date.dern.cs.neuro <- as_date(data_full_cleaned$date.dern.cs.neuro)
+# data_full_cleaned%>%
+# filter(date.dern.cs.neuro < as_date("2009-01-01")| date.dern.cs.neuro > as_date("2019-06-01"))%>%
+# select(code.pat, date.dern.cs.neuro)# ok, consultation close to the limit date
+
+# data_full_cleaned%>%
+# filter(date.dern.cs.autre < as_date("2009-01-01")| date.dern.cs.autre > as_date("2019-06-01"))%>%
+# select(code.pat, date.dern.cs.autre)# ok, consultation close to the limit date
+  
+rm(datecheck, tocheck, column, i, N_to_check, temp)
+  
+# si SBB_3 = 8 --> !is.na(SBB_5) | !is.na(SBB_4)
+
+# data_full_cleaned%>%
+#   filter(SBB.3 == 8)%>%
+#   filter(!is.na(SBB.5) | !is.na(SBB.4)) # 0 patients 
+
+# si SBB_4 != 2 --> !is.na(SBB_5)
+
+data_full_cleaned%>%
+  filter(SBB.4 != 2, !is.na(SBB.5)) # 0 patients
+
+### Change the AED column and only put TRUE for !is.na(date.debut.tt)
+
+data_full_cleaned$AED <- NULL
+data_full_cleaned%>%
+  mutate(AED = if_else(!is.na(date.debut.tt), TRUE, FALSE))%>%
+  select(AED, date.debut.tt)
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(AED = if_else(!is.na(date.debut.tt), TRUE, FALSE))
+
+### Creation of the variable EEG.results_2 with as level: normal, spikes, slow, spikes+slow, no data
+# Good for standard EEG
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(EEG.result_1 = ifelse(pointes.1st.EEG == "focale"| pointes.1st.EEG == "diffuse","pointes",NA))%>%
+  mutate(EEG.result_2 = ifelse(slow.1st.EEG == "focale" | slow.1st.EEG == "diffuse", "slow", NA))%>%
+  mutate(EEG.result_3 = ifelse(EEG.result_1 == "pointes" & EEG.result_2 == "slow", "pointes+slow", NA))%>%
+  mutate(EEG.result_4 = ifelse(is.na(EEG.result_3), EEG.result_1, "pointes+slow"))%>%
+  mutate(EEG.result_resume = ifelse(is.na(EEG.result_4), EEG.result_2, EEG.result_4))
+
+data_full_cleaned$EEG.result_1 <- NULL
+data_full_cleaned$EEG.result_2 <- NULL
+data_full_cleaned$EEG.result_3 <- NULL
+data_full_cleaned$EEG.result_4 <- NULL
+
+# Good for EEG LT
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(EEG.LT.result_1 = ifelse(pointes.lt.EEG == "focale"| pointes.lt.EEG == "diffuse","pointes",NA))%>%
+  mutate(EEG.LT.result_2 = ifelse(slow.lt.EEG == "focale" | slow.lt.EEG == "diffuse", "slow", NA))%>%
+  mutate(EEG.LT.result_3 = ifelse(EEG.LT.result_1 == "pointes" & EEG.LT.result_2 == "slow", "pointes+slow", NA))%>%
+  mutate(EEG.LT.result_4 = ifelse(is.na(EEG.LT.result_3), EEG.LT.result_1, "pointes+slow"))%>%
+  mutate(EEG.lt.result_resume = ifelse(is.na(EEG.LT.result_4), EEG.LT.result_2, EEG.LT.result_4))
+
+data_full_cleaned$EEG.LT.result_1 <- NULL
+data_full_cleaned$EEG.LT.result_2 <- NULL
+data_full_cleaned$EEG.LT.result_3 <- NULL
+data_full_cleaned$EEG.LT.result_4 <- NULL
+
+### Check interdependant dates with na in only one of them
+
+# date.adm.si - date.sortie.si
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.adm.si), is.na(date.sortie.si))%>%
+#   select(code.pat, date.adm.si, date.sortie.si)# 1 patient to check
+
+data_full_cleaned$date.sortie.si[data_full_cleaned$code.pat == "AR_CR_53"] <- as_date("2016-12-05")
+
+# date.1st.cs.neuro - date.dern.cs.neuro
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.1st.cs.neuro), is.na(date.dern.cs.neuro)) # 0 patient to check 
+
+# date.1st.cs.neurochir - date.dern.cs.neurochir
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.1st.cs.neurochir), is.na(date.dern.cs.neurochir)) # 0 patient to check 
+
+# date.1st.cs.psy - date.dern.cs.psy
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.1st.cs.psy), is.na(date.dern.cs.psy)) # 0 patient to check 
+
+# date.1st.cs.autre - date.dern.cs.autre
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.1st.cs.autre), is.na(date.dern.cs.autre)) # 0 patient to check 
+
+# date.prem.cs.epi - date.dern.cs.epi
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.1st.cs.epi), is.na(date.dern.cs.epi)) # 0 patient to check 
+
+# date.entree.1st.hospit - date.sortie.1st.hospit
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.entree.1st.hospit), is.na(date.sortie.1st.hospit))%>%
+#   select(code.pat, date.entree.1st.hospit, date.sortie.1st.hospit)# 6 patients to check 
+
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "WI_SE_54"] <- as_date("2011-07-05")
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "RA_LA_43"] <- as_date("2014-01-13")
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "MO_MA_76"] <- as_date("2015-06-23")
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "MI_MA_64"] <- as_date("2015-10-03")
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "CA_VI_50"] <- as_date("2016-03-05")
+data_full_cleaned$date.sortie.1st.hospit[data_full_cleaned$code.pat == "OR_ME_55"] <- as_date("2013-09-28")
+
+
+# date.fin.tt - date.debut.tt
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.fin.tt), is.na(date.debut.tt)) # 0 patient to check 
+
+# date.entree.2nd.hspit - date.sortie.2nd.hospit
+
+# data_full_cleaned%>%
+#   filter(!is.na(date.entree.2nd.hospit), is.na(date.sortie.2nd.hospit)) # 0 patient to check 
+
+### Creation of the data frame to check the lesions to the imageries
+
+IRM <- data_full_cleaned%>%filter(res.IRM == "anormal", les.IRM == "aucune")%>%
+       select(code.pat, date.IRM) # 102 patients to review
+
+CT <- data_full_cleaned%>%filter(res.CT == "anormal")%>%
+       filter(les.CT == "aucune" | is.na(les.CT))%>%
+       select(code.pat, date.CT) # 95 patients to ckeck... not very important now
+
+check_img <- data_full_cleaned%>%select(code.pat, dx.final, type.epi.final)
+
+check_img <- check_img%>%
+  left_join(IRM, by = "code.pat")%>%
+  left_join(CT, by = "code.pat")%>%
+  filter(!is.na(date.CT) | !is.na(date.IRM))
+check_img$les.CT <- NA
+check_img$les.IRM <- NA
+
+#write_xlsx(check_img, "check_img_to_do.xlsx")
+rm(check_img, CT, IRM)
+
+check_img_complete <- read_excel("check_img_to_do_complete_ok.xlsx")
+
+# left join the new data 
+check_img_complete <- check_img_complete%>%select(code.pat, les.IRM.corr, les.CT.corr, res.IRM.corr, res.CT.corr)
+data_full_cleaned <- data_full_cleaned%>%left_join(check_img_complete, by = "code.pat")
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.CT = ifelse(!is.na(les.CT.corr), les.CT.corr, les.CT))%>%
+  mutate(les.IRM = ifelse(!is.na(les.IRM.corr), les.IRM.corr, les.IRM))%>%
+  mutate(res.IRM = ifelse(!is.na(res.IRM.corr), res.IRM.corr, res.IRM))%>%
+  mutate(res.CT = ifelse(!is.na(res.CT.corr), res.CT.corr, res.CT))
+
+data_full_cleaned$res.CT.corr <- NULL
+data_full_cleaned$res.IRM.corr <- NULL
+data_full_cleaned$les.CT.corr <- NULL
+data_full_cleaned$les.IRM.corr <- NULL
+
+
+rm(check_img_complete)
+
+
+### Extraction of patients with imagery to check by PI
+
+data_full_cleaned$date.CT <- as_date(data_full_cleaned$date.CT)
+
+check_img_les_epi_missing <- data_full_cleaned%>%
+  filter(les.epi == "no data")%>%
+  select(code.pat, date.CT, date.IRM)
+
+#write_xlsx(check_img_les_epi_missing, "check_img_les_epi_missing.xlsx")
+rm(check_img_les_epi_missing)
+
+### Apply the necessary adjustements for lesional/non-lesional
+
+library(readxl)
+img_checked_FP <- read_excel("new_analyses/img_checked_FP.xlsx", 
+                             col_types = c("text", "date", "date", 
+                                           "numeric", "text"))
+
+img_checked_FP <- img_checked_FP%>%select(code.pat, lesion_epileptogene_txt)
+data_full_cleaned <- data_full_cleaned%>%
+       left_join(img_checked_FP, by = "code.pat")
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.epi = ifelse(is.na(lesion_epileptogene_txt), les.epi, lesion_epileptogene_txt))
+
+data_full_cleaned$lesion_epileptogene_txt <- NULL
+rm(img_checked_FP)
+
+### Extract the patients with diagnostic to check from the column review
+
+data_full_cleaned$date.1st.1st.sz <- as_date(data_full_cleaned$date.1st.1st.sz)
+
+
+review.dx <- data_full_cleaned%>%
+  filter(review.dx == TRUE)%>%
+  select(code.pat, date.1st.1st.sz, date.1st.cs.su)
+#write_xlsx(review.dx, "review_dx.xlsx")
+rm(review.dx)
+
+### Apply the necessary adjustements for diagnosis
+
+dx_corr_MS <- read_excel("new_analyses/dx_corr_MS.xlsx")
+
+data_full_cleaned <- data_full_cleaned%>%
+       left_join(dx_corr_MS, by = "code.pat")%>%
+       mutate(dx.final = ifelse(!is.na(dx.final_corr), dx.final_corr, dx.final),
+              type.epi.final = ifelse(!is.na(type.epi.final_corr), type.epi.final_corr, type.epi.final))
+
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "HI_DE_78"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "BE_FA_40"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "ME_RO_44"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "BO_JE_27"] <- NA
+data_full_cleaned$type.epi.final_corr <- NULL
+data_full_cleaned$dx.final_corr <- NULL
+rm(dx_corr_MS)
+
+### Creation of a new column operated TRUE/FALSE. Only the tumoral patients get operated
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(operated = ifelse(les.CT == "tumoral" | les.IRM == "tumoral", TRUE, FALSE ),
+         operated = ifelse(is.na(operated), FALSE, operated))
+
+### Check IGE and take out a list and ask MS and FP to review if juvenile myoclonic or grand mal awakening
+
+data_full_cleaned$pointes.1st.EEG[data_full_cleaned$code.pat == "MA_NI_22"] <- "diffuse"
+data_full_cleaned$pointes.lt.EEG[data_full_cleaned$code.pat == "BR_EL_16"] <- "diffuse"
+
+check_EGI <- data_full_cleaned%>%
+  filter(type.epi.final == "generalisee idiopathique")%>%
+  select(code.pat, type.epi.final, date.1st.1st.sz, pointes.lt.EEG, pointes.1st.EEG, date.1st.EEG, date.lt.EEG)
+check_EGI$type_EGI <- NA
+
+write_xlsx(check_EGI, "check_EGI.xlsx")
+rm(check_EGI)
+
+### Import cardiac origin from the first database
+
+ATCD <- read_excel("ATCD.xlsx")
+
+data_full_cleaned <- data_full_cleaned%>%left_join(ATCD, by = "code.pat")
+rm(ATCD)
+
+### take out a list of the different brain lesions and mark them as progressive or not progressive
+
+progressive <- data_full_cleaned%>%
+  group_by(les.IRM)%>%
+  dplyr::summarise()%>%
+  filter(!is.na(les.IRM))%>%
+  mutate(lesion = les.IRM)
+
+data_full_cleaned$les.CT[data_full_cleaned$les.CT == "autres"] <- "autre" 
+data_full_cleaned$les.IRM[data_full_cleaned$les.IRM == "autres"] <- "autre" 
+
+progressive$progressive <- NA
+write_xlsx(progressive, "progressive_lesion_check.xlsx")
+rm(progressive)
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.progressive_CT = case_when(les.CT == "demence" ~ "progressif",
+                                     les.CT == "genetique" ~ "non progressif",
+                                     les.CT == "infectieux" ~ "non progressif",
+                                     les.CT == "malformation de la migration" ~ "non progressif",
+                                     les.CT == "TCC" ~ "non progressif",
+                                     les.CT == "trauma" ~ "non progressif",
+                                     les.CT == "tumoral" ~ "progressif",
+                                     les.CT == "vasculaire" ~ "non progressif"))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.progressive_IRM = case_when(les.IRM == "demence" ~ "progressif",
+                                     les.IRM == "genetique" ~ "non progressif",
+                                     les.IRM == "infectieux" ~ "non progressif",
+                                     les.IRM == "malformation de la migration" ~ "non progressif",
+                                     les.IRM == "TCC" ~ "non progressif",
+                                     les.IRM == "trauma" ~ "non progressif",
+                                     les.IRM == "tumoral" ~ "progressif",
+                                     les.IRM == "vasculaire" ~ "non progressif"))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.progressive = ifelse(is.na(les.progressive_IRM), les.progressive_CT, les.progressive_IRM))
+
+data_full_cleaned$les.progressive_CT <- NULL
+data_full_cleaned$les.progressive_IRM <- NULL
+
+## Add column with the type of IGE
+
+library(readxl)
+check_EGI_done <- read_excel("check_EGI_done.xlsx")
+
+check_EGI_done <- check_EGI_done%>%
+  select(code.pat, type_EGI)
+
+data_full_cleaned <- data_full_cleaned%>%
+  left_join(check_EGI_done, by = "code.pat")
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "RÜ_SA_26"] <- "crise provoquee"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "RÜ_SA_26"] <- NA
+data_full_cleaned$type_EGI[data_full_cleaned$code.pat == "RÜ_SA_26"] <- NA
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "TO_SA_18"] <- "indetermine"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "TO_SA_18"] <- NA
+data_full_cleaned$type_EGI[data_full_cleaned$code.pat == "TO_SA_18"] <- NA
+
+rm(check_EGI_done)
+
+## Some more corrections... 
+
+# data_full_cleaned%>%filter(dx.final != "crise epilepsie", type.epi.final == "focale symptomatique")
+
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "LE_DE_86"] <- NA
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "FE_PI_81"] <- NA
+
+data_full_cleaned$date.1st.EEG <- as_date(data_full_cleaned$date.1st.EEG)
+
+# View(data_full_cleaned%>%filter(SBB.1 == 1, !is.na(date.2nd.1st.sz)))
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(SBB.1 = if_else(!is.na(date.2nd.1st.sz) & !is.na(date.dern.1st.sz), 3, SBB.1),
+         SBB.1 = if_else(!is.na(date.2nd.1st.sz) & is.na(date.dern.1st.sz), 2, SBB.1))
+
+data_full_cleaned$age <- as.numeric(data_full_cleaned$age)
+
+data_full_cleaned$les.IRM[data_full_cleaned$les.IRM == "genetique"] <- "malformation de la migration"
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(type.epi.final = ifelse(type.epi.final == "cryptogenique", "non lesionnelle", type.epi.final),
+         type.epi.final = ifelse(type.epi.final == "focale symptomatique", "lesionnelle", type.epi.final))
+
+data_full_cleaned$res.CT[data_full_cleaned$res.CT == "aucun mais  propose"] <- "aucun mais propose"
+
+# data_full_cleaned%>%
+#   filter(is.na(res.CT))
+
+# data_full_cleaned%>%
+#   filter(is.na(res.IRM))%>%
+#   select(code.pat, date.IRM, res.IRM, les.IRM)
+data_full_cleaned$res.IRM[data_full_cleaned$code.pat == "MA_EL_67"] <- "aucun"
+data_full_cleaned$les.IRM[data_full_cleaned$code.pat == "MA_EL_67"] <- NA
+
+data_full_cleaned%>%
+  filter(!is.na(code.pat))%>%
+  select(code.pat, SBB.1, date.1st.1st.sz, date.1st.cs.su)%>%
+  filter(is.na(SBB.1))
+
+
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "VO_GE_23"] <- 3
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "RO_PA_32"] <- 1
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "BA_JE_48"] <- 1
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "IB_AH_30"] <- 1
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "RU_SA_39"] <- 1
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "FI_GI_76"] <- 3
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "PE_CA_65"] <- 1
+
+  
+data_full_cleaned%>%
+filter(!is.na(code.pat))%>%
+select(SBB.2, code.pat)%>%
+filter(is.na(SBB.2))
+
+data_full_cleaned$SBB.1[data_full_cleaned$code.pat == "VO_GE_23"] <- 0
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "AL_NO_40"] <- 0 
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "RO_PA_32"] <- 2
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "RO_PA_32"] <- 7
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "RO_PA_32"] <- 2
+data_full_cleaned$SBB.5[data_full_cleaned$code.pat == "RO_PA_32"] <- 13
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "BA_JE_48"] <- 1
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "BA_JE_48"] <- 6
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "BA_JE_48"] <- 2
+data_full_cleaned$SBB.5[data_full_cleaned$code.pat == "BA_JE_48"] <- 13
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "IB_AH_30"] <- 2
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "IB_AH_30"] <- 7
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "IB_AH_30"] <- 4
+data_full_cleaned$SBB.5[data_full_cleaned$code.pat == "IB_AH_30"] <- 12
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "RU_SA_39"] <- 0
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "RU_SA_39"] <- 7
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "RU_SA_39"] <- 2
+data_full_cleaned$SBB.5[data_full_cleaned$code.pat == "RU_SA_39"] <- 13
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "FI_GI_76"] <- 0
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "FI_GI_76"] <- 7
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "FI_GI_76"] <- 2
+data_full_cleaned$SBB.5[data_full_cleaned$code.pat == "FI_GI_76"] <- 13
+data_full_cleaned$SBB.2[data_full_cleaned$code.pat == "PE_CA_65"] <- 1
+data_full_cleaned$SBB.3[data_full_cleaned$code.pat == "PE_CA_65"] <- 6
+data_full_cleaned$SBB.4[data_full_cleaned$code.pat == "PE_CA_65"] <- 3
+data_full_cleaned$srv.1st.hospit.si_autre[data_full_cleaned$code.pat == "PE_CA_65"] <- "MIG"
+
+data_full_cleaned%>%
+  filter(type_EGI == "PAS EPILEPSIE (UNKNOWN, PSY?)")%>%
+  select(code.pat)
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "BE_CL_52"] <- "indetermine"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "BE_CL_52"] <- NA
+
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(les.IRM = ifelse(les.IRM == "TCC", "trauma", les.IRM))
+
+
+
+data_full_cleaned$date.1st.cs.epi <- as_date(data_full_cleaned$date.1st.cs.epi)
+data_full_cleaned$date.1st.cs.su <- as_date(data_full_cleaned$date.1st.cs.su)
+
+data_full_cleaned%>%
+  mutate(delay = date.1st.cs.epi - date.1st.cs.su)%>%
+  filter(delay < 0)%>%
+  select(code.pat, date.1st.1st.sz, date.1st.cs.su, date.1st.cs.epi, delay) # 3 patients to check
+
+
+# data_full_cleaned%>%filter(res.1st.EEG == "normal", slow.1st.EEG == "diffuse")%>%
+#   select(code.pat)
+data_full_cleaned$res.1st.EEG[data_full_cleaned$code.pat == "TE_TH_55"] <- "anormal"
+
+data_full_cleaned$dx.final[data_full_cleaned$code.pat == "GI_PI_62"] <- "crise epilepsie"
+data_full_cleaned$type.epi.final[data_full_cleaned$code.pat == "GI_PI_62"] <- "generalisee idiopathique"
+
+
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(dx.general = ifelse(dx.final == "crise provoquee", "Epileptic seizure", NA))%>%
+  mutate(dx.general = ifelse(dx.final == "crise epilepsie", "Epileptic seizure", dx.general))%>%
+  mutate(dx.general = ifelse(dx.final == "indetermine", "Unknown", dx.general))%>%
+  mutate(dx.general = ifelse(dx.final == "origine cardiovasculaire", "Non epileptic event", dx.general))%>%
+  mutate(dx.general = ifelse(dx.final == "malaise vagal", "Non epileptic event", dx.general))%>%
+  mutate(dx.general = ifelse(dx.final == "psychogene", "Non epileptic event", dx.general))%>%  
+  mutate(dx.general = ifelse(dx.final == "autres", "Non epileptic event", dx.general))%>%
+  mutate(dx.general = ifelse(dx.final == "origine cardiaque", "Non epileptic event", dx.general))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(dx.event = ifelse(dx.final == "crise provoquee", "Acute symptomatic seizure", NA))%>%
+  mutate(dx.event = ifelse(dx.final == "crise epilepsie" & type.epi.final != "indetermine", "Epilepsy", dx.event))%>%
+  mutate(dx.event = ifelse(dx.final == "crise epilepsie" & type.epi.final == "indetermine", "Unknown", dx.event))%>%
+  mutate(dx.event = ifelse(dx.final == "origine cardiovasculaire", "Cardiovascular", dx.event))%>%
+  mutate(dx.event = ifelse(dx.final == "malaise vagal", "Vaso-vagal and orthostatic syncopes", dx.event))%>%
+  mutate(dx.event = ifelse(dx.final == "psychogene", "Psychogenic non epileptic seizure", dx.event))%>%
+  mutate(dx.event = ifelse(dx.final == "autres", "Other", dx.event))%>%
+  mutate(dx.event = ifelse(dx.final == "origine cardiaque", "Cardiac", dx.event))
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(dx.epi = case_when(type.epi.final == "lesionnelle" ~ "Focal epilepsy",
+                            type.epi.final == "non lesionnelle" ~ "Focal epilepsy",
+                            type.epi.final == "generalisee idiopathique" ~ "Primary generalized epilepsy"))
+data_full_cleaned$date.entree.1st.hospit <- as.POSIXct(data_full_cleaned$date.entree.1st.hospit)
+data_full_cleaned$date.1st.cs.epi <- as.POSIXct(data_full_cleaned$date.1st.cs.epi)
+data_full_cleaned$date.1st.cs.su <- as.POSIXct(data_full_cleaned$date.1st.cs.su)
+
+data_full_cleaned%>%
+  filter(dx.event == "Epilepsy")%>%
+  mutate(neurochir_epi = ifelse(SBB.3 == 4 | !is.na(SBB.5), TRUE, FALSE))%>%
+  filter(!is.na(neurochir_epi))%>%
+  mutate(date_neurochir_epi = case_when(SBB.3 == 4 ~ date.entree.1st.hospit,
+                                        SBB.3 != 4 & !is.na(date.1st.cs.epi) ~ date.1st.cs.epi))%>%
+  filter(is.na(date_neurochir_epi), neurochir_epi == TRUE)%>%
+  select(code.pat, date.1st.cs.epi, date.entree.1st.hospit, SBB.3, SBB.5) # 3 Patients to check, replace NA
+
+
+data_full_cleaned%>%
+  filter(dx.event == "Epilepsy")%>%
+  mutate(neurochir_epi = ifelse(SBB.3 == 4 | !is.na(SBB.5), TRUE, FALSE))%>%
+  filter(!is.na(neurochir_epi))%>%
+  mutate(date_neurochir_epi = case_when(SBB.3 == 4 ~ date.entree.1st.hospit,
+                                        SBB.3 != 4 & !is.na(date.1st.cs.epi) ~ date.1st.cs.epi))%>%
+  filter(!is.na(date_neurochir_epi), neurochir_epi == TRUE, !is.na(date.1st.cs.su))%>%
+  select(code.pat, date_neurochir_epi, date.1st.cs.su)%>%
+  mutate(delay = as.numeric(date_neurochir_epi - date.1st.cs.su)/86400)%>%
+  filter(delay < 0) # 7 patients to check
+
+# Remove NAs from the N.tot.recidives
+
+data_full_cleaned <- data_full_cleaned%>%
+  mutate(n.tot.recidives = ifelse(is.na(n.tot.recidives), 0, n.tot.recidives))
+
+# data_full_cleaned%>%
+#   filter(is.na(res.1st.EEG))
+
+# data_full_cleaned%>%
+#   filter(is.na(res.lt.EEG))
+
+## The data are ready for analyses, let's export them ! 
+
+#write_xlsx(data_full_cleaned, "data_analyses.xlsx")
+
+data_full_cleaned$res.1st.EEG[data_full_cleaned$res.1st.EEG == "aucun mais  propose"] <- "aucun mais propose"

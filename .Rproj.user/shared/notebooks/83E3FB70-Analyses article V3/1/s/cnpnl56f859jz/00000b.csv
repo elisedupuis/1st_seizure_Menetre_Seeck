@@ -1,0 +1,5 @@
+"0","legend(x = 0.8, y= 0.8, legend = classes, fill = pretty_colours, col = pretty_colours)
+"
+"2","Error in strwidth(legend, units = ""user"", cex = cex, font = text.font) : 
+  plot.new has not been called yet
+"

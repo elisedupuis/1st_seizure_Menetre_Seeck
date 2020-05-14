@@ -1,0 +1,4 @@
+"0","mdelay_RR <- glm(n.tot.recidives ~ delay.1st_epi_dx_fin*dx.dicho, data = data_glm_RR, family = ""poisson"")
+"
+"2","Error in is.data.frame(data) : object 'data_glm_RR' not found
+"

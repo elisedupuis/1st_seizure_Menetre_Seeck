@@ -1,0 +1,197 @@
+nrow(data_full_cleaned%>%filter(SBB.1 > 1))
+nrow(data_full_cleaned%>%filter(!is.na(date.1st.cs.su)))
+nrow(data_full_cleaned%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose"))
+nrow(data_full_cleaned%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+       mutate(delay_eeg = as.numeric(date.1st.EEG - date.1st.cs.su))%>%select(delay_eeg)%>%
+       filter(delay_eeg < 2)%>%select(delay_eeg))
+
+nrow(data_full_cleaned%>%filter(res.CT != "aucun" & res.CT != "aucun mais propose"))
+data_full_cleaned%>%filter(is.na(date.CT))%>%filter(res.CT != "aucun" & res.CT != "aucun mais propose")%>%
+  select(date.CT, res.CT)
+
+data_full_cleaned%>%filter(!is.na(date.CT)) %>% filter(res.CT == "aucun" | res.CT == "aucun mais propose")%>%
+  select(code.pat, res.CT, date.CT, res.IRM, les.epi, dx.event)
+
+data_full_cleaned%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  mutate(delay_mri = as.numeric(date.IRM - date.1st.cs.su),
+         delay_lt_eeg = as.numeric(date.lt.EEG - date.1st.cs.su))%>%
+  filter(delay_mri >= 0 | delay_lt_eeg >= 0)%>%
+  select(delay_mri, delay_lt_eeg, date.IRM, date.lt.EEG, date.1st.cs.su)%>%
+  summarise(mean_delay_mri = mean(delay_mri, na.rm = T),
+            SD_delay_mri = sd(delay_mri, na.rm = T),
+            mean_delay_lt_eeg= mean(delay_lt_eeg, na.rm = T),
+            sd_delay_lt_eeg = sd(delay_lt_eeg, na.rm = T))
+
+
+delays <- data_full_cleaned%>%filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
+  mutate(delay_mri = as.numeric(date.IRM - date.1st.cs.su),
+         delay_lt_eeg = as.numeric(date.lt.EEG - date.1st.cs.su))%>%
+  filter(delay_mri >= 0 | delay_lt_eeg >= 0)%>%
+  select(delay_mri, delay_lt_eeg, date.IRM, date.lt.EEG, date.1st.cs.su)%>%
+  summarise(median_delay_mri = median(delay_mri, na.rm = T),
+            median_delay_lt_eeg= median(delay_lt_eeg, na.rm = T))
+
+
+nrow(data_full_cleaned[data_full_cleaned$genre == "F",])
+mean(data_full_cleaned$age)
+sd(data_full_cleaned$age)
+range(data_full_cleaned$age)
+
+nrow(data_full_cleaned[data_full_cleaned$dx.event == "Epilepsy",])
+
+data%>%group_by(dx.general)%>%summarise( N = n())
+nrow(data%>%filter(dx.event == "Epilepsy"))
+
+data_chi <- data%>%select(dx.general, veille.sommeil)%>%
+  filter(veille.sommeil != "non documente")%>%
+  mutate(dx.general = ifelse(dx.general == "Epileptic seizure", "epileptic seizure", "not epileptic event"))%>%
+  group_by(dx.general, veille.sommeil)%>%
+  summarise(N = n())%>%
+  spread(key = veille.sommeil, N)
+
+data_chi <- data_chi[,2:3]
+chisq.test(data_chi)
+
+data%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  group_by(les.epi)%>%
+  summarise(N = n())
+  
+data%>%filter(dx.event == "Epilepsy")%>%
+filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  group_by(les.epi)%>%
+  summarise(N = n())
+
+
+data%>%filter(dx.event == "Epilepsy")%>%
+  filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")
+
+data%>%filter(dx.event == "Epilepsy")%>%filter(EEG.result_resume == "pointes" | EEG.result_resume == "pointes+slow")
+nrow(data%>%filter(dx.event == "Epilepsy")%>%filter(EEG.result_resume == "slow"))
+data%>%filter(dx.event == "Epilepsy" & res.1st.EEG == "normal")
+
+temp <- data%>%
+  mutate(spikes.dicho = ifelse(EEG.result_resume == "pointes" | EEG.result_resume == "pointes+slow", "pointes", "pas_pointes"),
+         spikes.dicho = ifelse(is.na(spikes.dicho), "pas_pointes", spikes.dicho),
+         eeg_delay = as.numeric(date.1st.EEG - date.1st.cs.su),
+         cat_delay = case_when(eeg_delay < 2 ~ "24h",
+                               eeg_delay > 1 & eeg_delay < 3 ~ "48h",
+                               eeg_delay > 2 & eeg_delay <4 ~ "72h",
+                               eeg_delay >=4 ~ "+72h"))%>%
+           group_by(cat_delay, spikes.dicho)%>%
+  summarise(N = n())%>%
+  spread(cat_delay, N)
+
+temp <- temp[,2:5]
+chisq.test(temp)
+
+
+data%>%filter(dx.event != "Epilepsy" | is.na(dx.event))%>%
+  filter(EEG.result_resume == "pointes" | EEG.result_resume == "pointes+slow")%>%
+  select(code.pat, dx.final, type.epi.final, EEG.result_resume, pointes.1st.EEG)%>%
+  group_by(dx.final, type.epi.final)%>%
+  summarise(N = n())
+
+data%>%filter(dx.event != "Epilepsy" | is.na(dx.event))%>%
+  filter(EEG.result_resume == "pointes" | EEG.result_resume == "pointes+slow")%>%
+  group_by(dx.general, dx.event, dx.epi)%>%
+  summarise(N = n())
+
+
+data%>%filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
+  filter(EEG.lt.result_resume == "pointes" | EEG.lt.result_resume == "pointes+slow")%>%
+  filter(dx.event == "Epilepsy")
+
+data%>%filter(dx.event == "Epilepsy")%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(EEG.result_resume == "slow" | is.na(EEG.result_resume))%>%
+  filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
+  filter(EEG.lt.result_resume == "pointes" | EEG.lt.result_resume == "pointes+slow")
+
+data%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(EEG.result_resume == "slow" | is.na(EEG.result_resume))%>%
+  filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
+  filter(EEG.lt.result_resume == "slow" | is.na(EEG.lt.result_resume))%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  filter(les.epi != "lesion epileptogene")%>%
+  filter(les.epi != "douteux")%>%
+  filter(dx.event == "Epilepsy")
+
+
+data_full_cleaned%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(res.lt.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  group_by(les.epi)%>%
+  summarise(N = n())
+
+
+
+
+
+
+
+temp <- data_full_cleaned%>%
+  filter(pointes.1st.EEG != "focale" & pointes.1st.EEG != "diffuse" & res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(pointes.lt.EEG != "focale" & pointes.lt.EEG != "diffuse" & res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
+  filter(les.epi == "normal" | les.epi == "lesion non epileptogene")%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")
+
+data%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(EEG.result_resume == "slow" | is.na(EEG.result_resume))%>%
+  filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
+  filter(EEG.lt.result_resume == "slow" | is.na(EEG.lt.result_resume))%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  filter(les.epi != "lesion epileptogene")%>%
+  select(pointes.1st.EEG, pointes.lt.EEG, res.IRM, les.epi)%>%
+  filter(les.epi == "douteux")
+
+
+data_tree_exams <- data_full_cleaned%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(res.lt.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(les.epi != "douteux")%>%
+  mutate(dx.dicho = ifelse(dx.event != "Epilepsy" | is.na(dx.event), "non-epileptic", "epileptic"),
+         les.epi = ifelse(les.epi == "lesion epileptogene", "epileptogenic lesion", "no epileptogenic lesion"),
+         EEG.result_resume = ifelse(is.na(EEG.result_resume) | EEG.result_resume == "slow", "no spikes", "spikes"),
+         EEG.lt.result_resume = ifelse(is.na(EEG.lt.result_resume) | EEG.lt.result_resume == "slow", "no spikes", "spikes"))%>%
+  select(code.pat, dx.dicho, les.epi, EEG.result_resume, EEG.lt.result_resume, pointes.1st.EEG, pointes.lt.EEG, dx.event)
+
+data_tree_exams%>%
+  group_by(EEG.lt.result_resume, EEG.result_resume, les.epi,dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "no epileptogenic lesion" & EEG.result_resume == "no spikes" & EEG.lt.result_resume == "no spikes")
+
+data%>%mutate(delay_dx = as_date(date.dx.final) - as_date(date.1st.cs.su))%>%
+  filter(delay_dx >= 0)%>%
+  filter(dx.event != "Epilepsy" | is.na(dx.event))%>%
+  summarise(MEAN = mean(delay_dx, na.rm = T),
+            SD = sd(delay_dx, na.rm = T))
+
+
+data%>%filter(!is.na(cause.deces) | !is.na(date.deces))
+
+mean(data$n.tot.recidives[data$dx.event == "Epilepsy"], na.rm = T)
+sd(data$n.tot.recidives[data$dx.event == "Epilepsy"], na.rm = T)
+
+mean(data$n.tot.recidives[data$type.epi.final == "generalisee idiopathique"], na.rm = T)
+sd(data$n.tot.recidives[data$dx.event != "Epilepsy" | is.na(data$dx.event)], na.rm = T)
+
+data%>%
+  group_by(dx.event, dx.epi, type.epi.final)%>%
+  summarise(MEAN = mean(n.tot.recidives, na.rm = T),
+            SD = sd(n.tot.recidives, na.rm = T))
+
+data_MD <- data_full_cleaned%>%
+  mutate(type.epi.initial = case_when(type.epi.initial == "cryptogenique" ~ "non lesionnelle",
+                                      type.epi.initial == "focale symptomatique" ~ "lesionnelle",
+                                      TRUE ~ type.epi.initial))%>%
+  mutate(dx_ini_paste = paste(dx.initial, type.epi.initial),
+         dx_fin_paste = paste(dx.final, type.epi.final))%>%
+  filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(les.epi != "aucun")%>%
+  filter(status.neuro != "aucun" &  status.neuro != "aucun mais propose" & status.neuro != "non documente")%>%
+  filter(veille.sommeil != "non documente")%>%
+  select(dx_ini_paste, dx_fin_paste)
+  

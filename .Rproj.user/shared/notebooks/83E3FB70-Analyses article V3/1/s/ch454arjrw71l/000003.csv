@@ -1,0 +1,11 @@
+"0","nrow(data_full_cleaned%>%
+  filter(EEG.result_resume == ""pointes"" | 
+           EEG.result_resume == ""pointes+slow"")%>%
+  filter(dx.event != ""Epilepsy"" & dx.event != ""Acute symptomatic seizure"" & dx.event != ""Unknown"")%>%
+    filter(res.lt.EEG == ""normal"")%>%
+  select(code.pat, date.1st.cs.su, date.1st.EEG, res.1st.EEG, EEG.result_resume,  date.lt.EEG, res.lt.EEG, EEG.lt.result_resume, dx.final, type.epi.final, type.autre.final))
+"
+"1","[1]"
+"1"," 2"
+"1","
+"
