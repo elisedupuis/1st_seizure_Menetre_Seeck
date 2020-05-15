@@ -351,7 +351,7 @@ data_RF_outcome_single_tree_LT <- function(data){
 ##################################################################
 
 library(readxl)
-data_full_cleaned <- read_xlsx("data_full_cleaned_ok.xlsx")
+data_full_cleaned <- read_xlsx("data_full_cleaned.xlsx")
 
 
 data_full_cleaned$date.1st.EEG <- as_date(data_full_cleaned$date.1st.EEG)
