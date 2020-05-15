@@ -715,7 +715,7 @@ In `r pct_not_first_event` (N = `r N_not_first_event`/`r tot_pat`) of the patien
 ```{r epilepsy}
 
 # Chi2 frequency event sleep between epilepsy and non-epilepsy patients
-data_chi <- data%>%select(dx.general, veille.sommeil)%>%
+data_chi <- data_full_cleaned%>%select(dx.general, veille.sommeil)%>%
   filter(veille.sommeil != "non documente")%>%
   mutate(dx.general = ifelse(dx.general == "Epileptic seizure", "epileptic seizure", "not epileptic event"))%>%
   group_by(dx.general, veille.sommeil)%>%
@@ -1063,7 +1063,7 @@ N_pat_all_normal <- nrow(data_full_cleaned%>%
   filter(les.epi == "normal" | les.epi == "lesion non epileptogene")%>%
   filter(res.IRM != "aucun" & res.IRM != "aucun mais propose"))
 
-N_pat_all_normal_suspicious_les <- nrow(data%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+N_pat_all_normal_suspicious_les <- nrow(data_full_cleaned%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
   filter(EEG.result_resume == "slow" | is.na(EEG.result_resume))%>%
   filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
   filter(EEG.lt.result_resume == "slow" | is.na(EEG.lt.result_resume))%>%
@@ -1636,7 +1636,7 @@ temp <- data_full_cleaned%>%
   filter(les.epi == "normal" | les.epi == "lesion non epileptogene")%>%
   filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")
 
-data%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+data_full_cleaned%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
   filter(EEG.result_resume == "slow" | is.na(EEG.result_resume))%>%
   filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
   filter(EEG.lt.result_resume == "slow" | is.na(EEG.lt.result_resume))%>%
