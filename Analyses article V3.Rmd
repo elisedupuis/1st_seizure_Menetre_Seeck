@@ -24,7 +24,7 @@ library(car)
 library(knitr)
 library(randomForest)
 library(ROCR)
-library(NPL)
+library(NPL) # from https://github.com/EricMenetre/NPL -> Follow instruction on the README regarding installation
 
 # functions
 
