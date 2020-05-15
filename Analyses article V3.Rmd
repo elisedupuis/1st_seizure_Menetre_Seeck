@@ -1100,18 +1100,20 @@ Note: Add a probability tree with the three exams to see probabilities among the
 
 ```{r probability tree multimodal information}
 
-### CODE A REVOIR, INCOHERENCES AVEC AUTRES DONNEES !!!!!
-
 data_tree_exams <- data_full_cleaned%>%
   filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
   filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
-  filter(res.lt.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  #filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
   filter(les.epi != "douteux")%>%
   mutate(dx.dicho = ifelse(dx.event != "Epilepsy" | is.na(dx.event), "non-epileptic", "epileptic"),
          les.epi = ifelse(les.epi == "lesion epileptogene", "epileptogenic lesion", "no epileptogenic lesion"),
          EEG.result_resume = ifelse(is.na(EEG.result_resume) | EEG.result_resume == "slow", "no spikes", "spikes"),
          EEG.lt.result_resume = ifelse(is.na(EEG.lt.result_resume) | EEG.lt.result_resume == "slow", "no spikes", "spikes"))%>%
-  select(code.pat, dx.dicho, les.epi, EEG.result_resume, EEG.lt.result_resume)
+  mutate(EEG_LT_y_n <- ifelse(res.lt.EEG == "aucun" | res.lt.EEG == "aucun mais propose", "no", "yes"),
+         to_remove = ifelse(EEG.result_resume == "no spikes" & EEG_LT_y_n == "no", "remove", "keep"))%>%
+  filter(to_remove == "keep")%>% 
+  select(code.pat, dx.dicho, les.epi, EEG.result_resume, EEG.lt.result_resume, pointes.1st.EEG, pointes.lt.EEG, dx.event)
+
 
 # Probability of being epileptic without any exam in the sample
 data_tree_exams%>%
@@ -1152,7 +1154,6 @@ data_tree_exams%>%
 
 # Probability of being epileptic according to epileptogenic lesion, Std EEG and LT EEG
 
-##################### A revoir demain !!!!!!
 data_tree_exams%>%
   group_by(EEG.lt.result_resume, EEG.result_resume, les.epi,dx.dicho)%>%
   summarise(N = n())%>%
@@ -1173,7 +1174,6 @@ data_tree_exams%>%
   group_by(EEG.lt.result_resume, EEG.result_resume, les.epi,dx.dicho)%>%
   summarise(N = n())%>%
   filter(les.epi == "epileptogenic lesion" & EEG.result_resume == "no spikes" & EEG.lt.result_resume == "spikes")
-
 
 ```
 
@@ -1489,7 +1489,7 @@ data_tree_RF <- data_full_cleaned%>%
   filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
   filter(les.epi != "douteux")%>%
   filter(veille.sommeil != "non documente")%>%
-  mutate(dx.dicho = ifelse(dx.event == "Epilepsy" | is.na(dx.event), "epileptic", "non-epileptic"),
+  mutate(dx.dicho = ifelse(dx.event != "Epilepsy" | is.na(dx.event), "non-epileptic", "epileptic"),
          les.epi = ifelse(les.epi == "lesion epileptogene", "epileptogenic lesion", "no epileptogenic lesion"),
          EEG.result_resume = ifelse(is.na(EEG.result_resume) | EEG.result_resume == "slow", "no spikes", "spikes"))%>%
   select(code.pat, dx.dicho, les.epi, EEG.result_resume, veille.sommeil)
@@ -1538,12 +1538,44 @@ data_tree_RF%>%
   summarise(N = n())%>%
   filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "no spikes", veille.sommeil == "veille")
 
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "no spikes", veille.sommeil == "sommeil")
 
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "spikes", veille.sommeil == "veille")
+
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "spikes", veille.sommeil == "sommeil")
+
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "epileptogenic lesion", EEG.result_resume == "no spikes", veille.sommeil == "veille")
+
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "epileptogenic lesion", EEG.result_resume == "no spikes", veille.sommeil == "sommeil")
+
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "epileptogenic lesion", EEG.result_resume == "spikes", veille.sommeil == "veille")
+
+data_tree_RF%>%
+  group_by(veille.sommeil, EEG.result_resume, les.epi, dx.dicho)%>%
+  summarise(N = n())%>%
+  filter(les.epi == "epileptogenic lesion", EEG.result_resume == "spikes", veille.sommeil == "sommeil")
 
 ```
 
 **END Probability tree based on the three best factors explained by the model**
-
 
 
 ### Yield of the LT EEG in the diagnosis of epilepsy

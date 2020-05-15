@@ -150,13 +150,16 @@ data%>%filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
 data_tree_exams <- data_full_cleaned%>%
   filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
   filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
-  filter(res.lt.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(res.lt.EEG != "aucun" & res.lt.EEG != "aucun mais propose")%>%
   filter(les.epi != "douteux")%>%
   mutate(dx.dicho = ifelse(dx.event != "Epilepsy" | is.na(dx.event), "non-epileptic", "epileptic"),
          les.epi = ifelse(les.epi == "lesion epileptogene", "epileptogenic lesion", "no epileptogenic lesion"),
          EEG.result_resume = ifelse(is.na(EEG.result_resume) | EEG.result_resume == "slow", "no spikes", "spikes"),
          EEG.lt.result_resume = ifelse(is.na(EEG.lt.result_resume) | EEG.lt.result_resume == "slow", "no spikes", "spikes"))%>%
-  select(code.pat, dx.dicho, les.epi, EEG.result_resume, EEG.lt.result_resume, pointes.1st.EEG, pointes.lt.EEG, dx.event)
+  select(code.pat, dx.dicho, les.epi, EEG.result_resume, EEG.lt.result_resume, pointes.1st.EEG, pointes.lt.EEG, dx.event)%>%
+  filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "no spikes", EEG.lt.result_resume == "no spikes")
+
+
 
 data_tree_exams%>%
   group_by(EEG.lt.result_resume, EEG.result_resume, les.epi,dx.dicho)%>%
@@ -195,3 +198,27 @@ data_MD <- data_full_cleaned%>%
   filter(veille.sommeil != "non documente")%>%
   select(dx_ini_paste, dx_fin_paste)
   
+
+temp <- data_full_cleaned%>%
+  filter(res.IRM != "aucun" & res.IRM != "aucun mais propose")%>%
+  filter(res.1st.EEG != "aucun" & res.1st.EEG != "aucun mais propose")%>%
+  filter(les.epi != "douteux")%>%
+  mutate(dx.dicho = ifelse(dx.event != "Epilepsy" | is.na(dx.event), "non-epileptic", "epileptic"),
+         les.epi = ifelse(les.epi == "lesion epileptogene", "epileptogenic lesion", "no epileptogenic lesion"),
+         EEG.result_resume = ifelse(is.na(EEG.result_resume) | EEG.result_resume == "slow", "no spikes", "spikes"),
+         EEG.lt.result_resume = ifelse(is.na(EEG.lt.result_resume) | EEG.lt.result_resume == "slow", "no spikes", "spikes"))%>%
+  mutate(EEG_LT_y_n <- ifelse(res.lt.EEG == "aucun" | res.lt.EEG == "aucun mais propose", "no", "yes"),
+         to_remove = ifelse(EEG.result_resume == "no spikes" & EEG_LT_y_n == "no", "remove", "keep"))%>%
+  filter(to_remove == "keep")
+
+
+temp%>%filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "spikes")%>%
+  select(code.pat, dx.event, les.epi, EEG.result_resume, dx.dicho, type.cardiovasculaire, type.autre.final)%>%
+  filter(dx.dicho == "non-epileptic")%>%
+  group_by(dx.event, type.cardiovasculaire, type.autre.final)%>%
+  summarise(N = n())
+
+temp%>%filter(les.epi == "no epileptogenic lesion", EEG.result_resume == "spikes")%>%
+  select(code.pat, dx.event, date.1st.cs.su, date.1st.EEG, dx.dicho, type.autre.final)%>%
+  filter(dx.dicho == "non-epileptic")%>%
+  filter(dx.event == "Psychogenic non epileptic seizure" | dx.event == "Other" | dx.event == "Cardiovascular")

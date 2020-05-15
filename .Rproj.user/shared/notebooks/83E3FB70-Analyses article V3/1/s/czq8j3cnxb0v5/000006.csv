@@ -1,19 +1,19 @@
 "0","# Libraries "
 "0",""
 "0","library(dplyr)"
-"2","Warning messages:
+"2","
+Attachement du package : ‘dplyr’
+
 "
-"2","1: Unknown or uninitialised column: 'N'. 
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
 "
-"2","2: Unknown or uninitialised column: 'N'. 
-"
-"2","3: Unknown or uninitialised column: 'N'. 
-"
-"2","4: Unknown or uninitialised column: 'N'. 
-"
-"2","5: Unknown or uninitialised column: 'N'. 
-"
-"2","6: Unknown or uninitialised column: 'N'. 
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
 "
 "0","library(ggplot2)"
 "0","library(tidyr)"
@@ -21,12 +21,62 @@
 "0","library(emmeans)"
 "0","library(tidyr)"
 "0","library(lubridate)"
+"2","
+Attachement du package : ‘lubridate’
+
+"
+"2","The following object is masked from ‘package:base’:
+
+    date
+
+"
 "0","library(car)"
+"2","Le chargement a nécessité le package : carData
+"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"
+"2","
+Attachement du package : ‘car’
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    recode
+
+"
 "0","library(knitr)"
 "0","library(randomForest)"
+"2","randomForest 4.6-14
+"
+"2","Type rfNews() to see new features/changes/bug fixes.
+"
+"2","
+Attachement du package : ‘randomForest’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    margin
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    combine
+
+"
 "0","library(ROCR)"
 "0","library(NPL)"
-"0",""
+"2","
+Attachement du package : ‘NPL’
+
+"
+"2","The following object is masked _by_ ‘.GlobalEnv’:
+
+    number_to_word
+
+"
 "0","# functions"
 "0",""
 "0","## Function to calculate percentages"
@@ -144,6 +194,7 @@
 "0","           dx.event != ""Unknown"")%>%"
 "0","    filter(type.epi.final == ""lesionnelle"" | type.epi.final == ""non lesionnelle"" | type.epi.final == ""generalisee idiopathique"" | is.na(type.epi.final))%>%"
 "0","    filter(veille.sommeil != ""non documente"")%>%"
+"0","    filter(status.neuro != ""aucun"" &  status.neuro != ""aucun mais propose"" & status.neuro != ""non documente"")%>%"
 "0","    mutate(std_eeg = ifelse(res.1st.EEG == ""normal"", ""normal"", EEG.result_resume),"
 "0","           std_eeg = case_when(pointes.1st.EEG == ""focale"" ~ ""focale"","
 "0","                               pointes.1st.EEG == ""diffuse""~ ""diffuse"","
@@ -198,6 +249,7 @@
 "0","           dx.event != ""Unknown"")%>%"
 "0","    filter(type.epi.final == ""lesionnelle"" | type.epi.final == ""non lesionnelle"" | type.epi.final == ""generalisee idiopathique"" | is.na(type.epi.final))%>%"
 "0","    filter(veille.sommeil != ""non documente"")%>%"
+"0","    filter(status.neuro != ""aucun"" &  status.neuro != ""aucun mais propose"" & status.neuro != ""non documente"")%>%"
 "0","    mutate(std_eeg = ifelse(res.1st.EEG == ""normal"", ""normal"", EEG.result_resume),"
 "0","           std_eeg = case_when(pointes.1st.EEG == ""focale"" ~ ""focale"","
 "0","                               pointes.1st.EEG == ""diffuse""~ ""diffuse"","
@@ -239,6 +291,7 @@
 "0","    filter(veille.sommeil != ""non documente"")%>%"
 "0","    filter(res.lt.EEG != ""aucun"")%>%"
 "0","    filter(res.lt.EEG != ""aucun mais propose"" & res.lt.EEG != ""aucun mais  propose"")%>%"
+"0","    filter(status.neuro != ""aucun"" &  status.neuro != ""aucun mais propose"" & status.neuro != ""non documente"")%>%"
 "0","    mutate(std_eeg = ifelse(res.1st.EEG == ""normal"", ""normal"", EEG.result_resume),"
 "0","           std_eeg = case_when(pointes.1st.EEG == ""focale"" ~ ""focale"","
 "0","                               pointes.1st.EEG == ""diffuse""~ ""diffuse"","
@@ -298,6 +351,7 @@
 "0","    filter(veille.sommeil != ""non documente"")%>%"
 "0","    filter(res.lt.EEG != ""aucun"")%>%"
 "0","    filter(res.lt.EEG != ""aucun mais propose"" & res.lt.EEG != ""aucun mais  propose"")%>%"
+"0","    filter(status.neuro != ""aucun"" &  status.neuro != ""aucun mais propose"" & status.neuro != ""non documente"")%>%"
 "0","    mutate(std_eeg = ifelse(res.1st.EEG == ""normal"", ""normal"", EEG.result_resume),"
 "0","           std_eeg = case_when(pointes.1st.EEG == ""focale"" ~ ""focale"","
 "0","                               pointes.1st.EEG == ""diffuse""~ ""diffuse"","
