@@ -1,5 +1,0 @@
-"0","data_full_cleaned <- read_xlsx(""data_full_cleaned.xlsx"")
-"
-"2","Error in read_xlsx(""data_full_cleaned.xlsx"") : 
-  could not find function ""read_xlsx""
-"
